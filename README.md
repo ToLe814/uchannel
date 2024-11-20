@@ -86,7 +86,7 @@ if u1.check_feasibility():
         u1.gmsh_filleting = False
         u1.create_geometry(export=True, gui=True)
 ```
-Find running examples of feasible geometry creation in the respective project files. Explanation for the parameters can be found in the comments, or in the associated [publication(s)](#cite-this-work). Currently, there is no documentation of the code.
+Find running examples of feasible geometry creation in the respective project files. Explanation for the parameters can be found in the comments, sketches, or in the associated [publication(s)](#cite-this-work). Currently, there is no documentation of the code.
 
 
 ## Contributing
