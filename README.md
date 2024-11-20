@@ -62,9 +62,7 @@ pip install .
 
 
 ## Requirements
-    Python >= 3.x
-    gmsh >= 4.11.x
-For details, we refer to the pyproject.toml file.	
+We refer to the pyproject.toml file.	
 	
 
 ## Usage
@@ -121,4 +119,4 @@ This project is licensed under the Creative Commons Attribution 4.0 Internationa
 
 
 ## Happy coding! 🚀
-For questions or support, feel free to open an issue.
+For questions or support, feel free to open a discussion or an issue.
