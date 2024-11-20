@@ -100,12 +100,13 @@ Pull requests are considered within the frame of the above-described requirement
 If you use this project in your research or applications, please cite it as follows:
 
 ```bib
-@misc{YourName2024,
-  author = {Your Name},
-  title = {Project Name},
-  year = {2024},
-  publisher = {GitHub},
-  howpublished = {\url{https://github.com/yourusername/projectname}},
+@misc{Lehrer.2024,
+ abstract = {The U-Channel Software is a python package containing four parametric models of U-shaped Sheet metals. The parameters refer to geometric dimensions, angles, fillet radii. Using the models, one can generate an infinite number of U-shaped sheet metal geometries, e.g. as STEP files. The parametric models are inspired by real-world shapes. A feasibility check is provided to ensure plausiblity of the shapes. Further features of the code are creating images of the geometries and generating geometries and images in parallel. For more details, refer to the repository and associated publications.},
+ author = {Lehrer, Tobias and Stocker, Philipp and Duddeck, Fabian and Wagner, Marcus},
+ year = {2024},
+ title = {Parametric CAD Models to Create an Infinite Number of Structural U-Shaped Sheet Metal Geometries},
+ publisher = {Zenodo},
+ doi = {10.5281/zenodo.14191374}
 }
 ```
 
