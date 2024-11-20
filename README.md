@@ -1,6 +1,7 @@
 # U-Channel
 
-![Status](https://img.shields.io/badge/status-stable-green) ![Version](https://img.shields.io/badge/version-1.0.0-blue) ![License](https://img.shields.io/github/license/ToLe814/uchannel) ![Visitor Count](https://visitor-badge.laobi.icu/badge?page_id=ToLe814.uchannel) ![GitHub All Releases](https://img.shields.io/github/downloads/ToLe814/uchannel/total?color=blue&style=flat-square)
+![Status](https://img.shields.io/badge/status-stable-green) ![Version](https://img.shields.io/badge/version-1.0.0-blue) ![License](https://img.shields.io/github/license/ToLe814/uchannel) ![Visitor Count](https://visitor-badge.laobi.icu/badge?page_id=ToLe814.uchannel) ![GitHub All Releases](https://img.shields.io/github/downloads/ToLe814/uchannel/total?color=blue&style=flat-square&cacheSeconds=30)
+
 
 Welcome to the **U-Channel** project, an [installable Python package](#installation) designed to provide parametric CAD models for the generation of U-shaped sheet metal geometries.
 
@@ -109,9 +110,8 @@ If you use this project in your research or applications, please cite it as foll
  doi = {10.5281/zenodo.14191374}
 }
 ```
-
+ 
 ## License
-
 This project is licensed under the Creative Commons Attribution 4.0 International License. See the LICENSE file for details.
 
 
