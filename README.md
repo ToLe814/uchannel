@@ -80,7 +80,7 @@ u1 = UChannel1(path_geom, x_1=100, x_2=105, y_l=50, y_r=50, z_l_1=33.3, z_l_2=33
 # Check the feasibility
 if u1.check_feasibility():
         # Create the geometry
-        u1.gmsh_filleting = False
+        u1.gmsh_filleting = True
         u1.create_geometry(export=True, gui=True)
 ```
 Find running examples of feasible geometry creation in the respective project files. Explanation for the parameters can be found in the comments, sketches, or in the associated [publication(s)](#cite-this-work). Currently, there is no documentation of the code.
