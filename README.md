@@ -63,7 +63,7 @@ We refer to the pyproject.toml file.
 	
 
 ## Usage
-Here’s a quick example of how to use the U-Channel package after installation:
+Here’s a quick example of using the U-Channel package with one of the four parametric models after installation:
 ```python
 from uchannel.uchannel1 import UChannel1
 from pathlib import Path
@@ -83,7 +83,7 @@ if u1.check_feasibility():
         u1.gmsh_filleting = True
         u1.create_geometry(export=True, gui=True)
 ```
-Find running examples of feasible geometry creation in the respective project files. Explanation for the parameters can be found in the comments, sketches, or in the associated [publication(s)](#cite-this-work). Currently, there is no documentation of the code.
+Find running examples of feasible geometry creation in the respective project files. Explanation for the parameters can be found in the comments, [sketches](./sketches/), or in the associated [publication(s)](#cite-this-work). Currently, there is no documentation of the code.
 
 
 ## Contributing
