@@ -204,8 +204,8 @@ class UChannelBase:
 
         # zoom
         gmsh.option.setNumber("General.ScaleX", zoom_factor)
-        gmsh.option.setNumber("General.ScaleX", zoom_factor)
-        gmsh.option.setNumber("General.ScaleX", zoom_factor)
+        gmsh.option.setNumber("General.ScaleY", zoom_factor)
+        gmsh.option.setNumber("General.ScaleZ", zoom_factor)
 
         # show the gui or run in background
         if show:

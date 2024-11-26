@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "uchannel"
-version = "1.0.0"
+version = "1.0.1"
 description = "Create an infinite number of structural U-shaped CAD sheet metals using four distinct parametric models"
 authors = ["Tobias Lehrer <tobias.lehrer@tum.de>", "Philipp Stocker <philipp.stocker@oth-regensburg.de>"]
 readme = "README.md"
