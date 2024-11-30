@@ -6,7 +6,7 @@ authors = ["Tobias Lehrer <tobias.lehrer@tum.de>", "Philipp Stocker <philipp.sto
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^>3.10"
+python = ">3.10"
 gmsh = ">4.11.0"
 numpy = ">2.0.0"
 pyDOE3 = ">1.0.4"
