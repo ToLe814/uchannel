@@ -121,7 +121,8 @@ class UChannelBase:
         raise NotImplementedError
 
     @staticmethod
-    def create_image(inpath: Path, outpath: Path, pov="isometric x", title="", zoom_factor=1.0, show=False):
+    def create_image(inpath: Path, outpath: Path, pov="isometric x", title="", zoom_factor=1.0, curve_width=2.0,
+                     show=False):
         """
         Create an image of a geometry using gmsh. The background color is set to white.
 
@@ -131,6 +132,8 @@ class UChannelBase:
         :param title: Text to print into the top of the image
         :param zoom_factor: zoom_factor > 1.0: zoom in
                             zoom_factor < 1.0: zoom out
+        :param curve_width: factor to adapt the width of the edges in the image. THe larger the value, the thicker the
+                            edges.
         :param show: Option to show the image in the gui
         """
         # load geometry
@@ -206,6 +209,9 @@ class UChannelBase:
         gmsh.option.setNumber("General.ScaleX", zoom_factor)
         gmsh.option.setNumber("General.ScaleY", zoom_factor)
         gmsh.option.setNumber("General.ScaleZ", zoom_factor)
+
+        # adapt the width of the edges
+        gmsh.option.setNumber("Geometry.CurveWidth", curve_width)
 
         # show the gui or run in background
         if show:
