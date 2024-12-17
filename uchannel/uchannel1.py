@@ -10,8 +10,8 @@ from uchannel.error_handling import FeasibilityError
 class UChannel1(UChannelBase):
     def __init__(self, path: Path, x_1: float = 100, x_2: float = 105, y_l: float = 50, y_r: float = 50,
                  y_sa: float = 50, z_l_1: float = 33.3, z_l_2: float = 33.3, z_r_1: float = 33.3, z_r_2: float = 33.3,
-                 offset_mp_1: Tuple[float, float, float] = (1, 1, 1),
-                 offset_mp_2: Tuple[float, float, float] = (1, 1, 1), r_l: Tuple[float, float] = (5, 5),
+                 o_mp_1: Tuple[float, float, float] = (1, 1, 1),
+                 o_mp_2: Tuple[float, float, float] = (1, 1, 1), r_l: Tuple[float, float] = (5, 5),
                  r_r: Tuple[float, float] = (5, 5), beta_l_1: float = 15, beta_l_2: float = 15, beta_r_1: float = 15,
                  beta_r_2: float = 15, sa: bool = 15):
         """
@@ -30,8 +30,8 @@ class UChannel1(UChannelBase):
         :param z_l_2: Height of the left slant on side 2 along the z-axis
         :param z_r_1: Height of the right slant on side 1 along the z-axis
         :param z_r_2: Height of the right slant on side 2 along the z-axis
-        :param offset_mp_1: Offset of the mid-point of the bottom plane (side 1) along the x, y, and z-axis
-        :param offset_mp_2: Offset of the mid-point of the bottom plane (side 1) along the x, y, and z-axis
+        :param o_mp_1: Offset of the mid-point of the bottom plane (side 1) along the x, y, and z-axis
+        :param o_mp_2: Offset of the mid-point of the bottom plane (side 1) along the x, y, and z-axis
         :param r_l: Radii of the fillets on the left side
         :param r_r: Radii of the fillets on the right side
         :param beta_l_1: Angle of the left slant on side 1
@@ -52,8 +52,8 @@ class UChannel1(UChannelBase):
         self.z_l_2 = z_l_2
         self.z_r_1 = z_r_1
         self.z_r_2 = z_r_2
-        self.offset_mp_1 = self.Vertex(*offset_mp_1)
-        self.offset_mp_2 = self.Vertex(*offset_mp_2)
+        self.o_mp_1 = self.Vertex(*o_mp_1)
+        self.o_mp_2 = self.Vertex(*o_mp_2)
         self.r_l = r_l
         self.r_r = r_r
         self.beta_l_1 = math.radians(beta_l_1)
@@ -75,22 +75,22 @@ class UChannel1(UChannelBase):
         self.v2 = self.Vertex(self.x_1, self.y_r, 0)
         self.v3 = self.Vertex(0, 0, 0)
         self.v4 = self.Vertex(self.x_2, 0, 0)
-        self.v5 = self.Vertex((self.v2.x + self.v1.x) / 2 + self.offset_mp_1.x,
-                              (self.v2.y + self.v1.y) / 2 + self.offset_mp_1.y, 0)
-        self.v6 = self.Vertex((self.v3.x + self.v4.x) / 2 + self.offset_mp_2.x,
-                              (self.v3.y + self.v4.y) / 2 + self.offset_mp_2.y, 0)
+        self.v5 = self.Vertex((self.v2.x + self.v1.x) / 2 + self.o_mp_1.x,
+                              (self.v2.y + self.v1.y) / 2 + self.o_mp_1.y, 0)
+        self.v6 = self.Vertex((self.v3.x + self.v4.x) / 2 + self.o_mp_2.x,
+                              (self.v3.y + self.v4.y) / 2 + self.o_mp_2.y, 0)
 
         # Vertices that construct the slants 1 and 2
         self.v7 = self.Vertex(0, self.y_l + self.z_l_1 * math.tan(self.beta_l_1), self.z_l_1)
         self.v8 = self.Vertex(self.x_1, self.y_r + self.z_r_1 * math.tan(self.beta_r_1), self.z_r_1)
         self.v9 = self.Vertex(0, -self.z_l_2 * math.tan(self.beta_l_2), self.z_l_2)
         self.v10 = self.Vertex(self.x_2, -self.z_r_2 * math.tan(self.beta_r_2), self.z_r_2)
-        self.v11 = self.Vertex((self.v8.x + self.v7.x) / 2 + self.offset_mp_1.x,
-                               (self.v8.y + self.v7.y) / 2 + self.offset_mp_1.y,
-                               (self.v8.z + self.v7.z) / 2 + self.offset_mp_1.z)
-        self.v12 = self.Vertex((self.v10.x + self.v9.x) / 2 + self.offset_mp_2.x,
-                               (self.v10.y + self.v9.y) / 2 + self.offset_mp_2.y,
-                               (self.v10.z + self.v9.z) / 2 + self.offset_mp_2.z)
+        self.v11 = self.Vertex((self.v8.x + self.v7.x) / 2 + self.o_mp_1.x,
+                               (self.v8.y + self.v7.y) / 2 + self.o_mp_1.y,
+                               (self.v8.z + self.v7.z) / 2 + self.o_mp_1.z)
+        self.v12 = self.Vertex((self.v10.x + self.v9.x) / 2 + self.o_mp_2.x,
+                               (self.v10.y + self.v9.y) / 2 + self.o_mp_2.y,
+                               (self.v10.z + self.v9.z) / 2 + self.o_mp_2.z)
 
         # Vertices that construct the slant addendum 1 and 2
         if self.sa:
@@ -114,12 +114,12 @@ class UChannel1(UChannelBase):
             "z_l_2": self.Bounds(2 / 20 * self.x_1, 1 / 3 * self.x_1),
             "z_r_1": self.Bounds(2 / 20 * self.x_1, 1 / 3 * self.x_1),
             "z_r_2": self.Bounds(2 / 20 * self.x_1, 1 / 3 * self.x_1),
-            "offset_mp_1_x": self.Bounds(-0.01 * self.x_1, 0.01 * self.x_1),
-            "offset_mp_1_y": self.Bounds(-0.01 * self.x_1, 0.01 * self.x_1),
-            "offset_mp_1_z": self.Bounds(-0.01 * self.x_1, 0.01 * self.x_1),
-            "offset_mp_2_x": self.Bounds(-0.01 * self.x_1, 0.01 * self.x_1),
-            "offset_mp_2_y": self.Bounds(-0.01 * self.x_1, 0.01 * self.x_1),
-            "offset_mp_2_z": self.Bounds(-0.01 * self.x_1, 0.01 * self.x_1),
+            "o_mp_1_x": self.Bounds(-0.01 * self.x_1, 0.01 * self.x_1),
+            "o_mp_1_y": self.Bounds(-0.01 * self.x_1, 0.01 * self.x_1),
+            "o_mp_1_z": self.Bounds(-0.01 * self.x_1, 0.01 * self.x_1),
+            "o_mp_2_x": self.Bounds(-0.01 * self.x_1, 0.01 * self.x_1),
+            "o_mp_2_y": self.Bounds(-0.01 * self.x_1, 0.01 * self.x_1),
+            "o_mp_2_z": self.Bounds(-0.01 * self.x_1, 0.01 * self.x_1),
             "r_l_0": self.Bounds(2 / 1000 * self.x_1, 1 / 20 * self.x_1),
             "r_l_1": self.Bounds(2 / 1000 * self.x_1, 1 / 20 * self.x_1),
             "r_r_0": self.Bounds(2 / 1000 * self.x_1, 1 / 20 * self.x_1),
@@ -150,12 +150,12 @@ class UChannel1(UChannelBase):
             self._validate_parameter("z_l_2", self.z_l_2, self.f_bounds["z_l_2"].min, self.f_bounds["z_l_2"].max)
             self._validate_parameter("z_r_1", self.z_r_1, self.f_bounds["z_r_1"].min, self.f_bounds["z_r_1"].max)
             self._validate_parameter("z_r_2", self.z_r_2, self.f_bounds["z_r_2"].min, self.f_bounds["z_r_2"].max)
-            self._validate_parameter("offset_mp_1[0]", self.offset_mp_1.x, self.f_bounds["offset_mp_1_x"].min, self.f_bounds["offset_mp_1_x"].max)
-            self._validate_parameter("offset_mp_1[1]", self.offset_mp_1.y, self.f_bounds["offset_mp_1_y"].min, self.f_bounds["offset_mp_1_y"].max)
-            self._validate_parameter("offset_mp_1[2]", self.offset_mp_1.z, self.f_bounds["offset_mp_1_z"].min, self.f_bounds["offset_mp_1_z"].max)
-            self._validate_parameter("offset_mp_2[0]", self.offset_mp_2.x, self.f_bounds["offset_mp_2_x"].min, self.f_bounds["offset_mp_2_x"].max)
-            self._validate_parameter("offset_mp_2[1]", self.offset_mp_2.y, self.f_bounds["offset_mp_2_y"].min, self.f_bounds["offset_mp_2_y"].max)
-            self._validate_parameter("offset_mp_2[2]", self.offset_mp_2.z, self.f_bounds["offset_mp_2_z"].min, self.f_bounds["offset_mp_2_z"].max)
+            self._validate_parameter("o_mp_1[0]", self.o_mp_1.x, self.f_bounds["o_mp_1_x"].min, self.f_bounds["o_mp_1_x"].max)
+            self._validate_parameter("o_mp_1[1]", self.o_mp_1.y, self.f_bounds["o_mp_1_y"].min, self.f_bounds["o_mp_1_y"].max)
+            self._validate_parameter("o_mp_1[2]", self.o_mp_1.z, self.f_bounds["o_mp_1_z"].min, self.f_bounds["o_mp_1_z"].max)
+            self._validate_parameter("o_mp_2[0]", self.o_mp_2.x, self.f_bounds["o_mp_2_x"].min, self.f_bounds["o_mp_2_x"].max)
+            self._validate_parameter("o_mp_2[1]", self.o_mp_2.y, self.f_bounds["o_mp_2_y"].min, self.f_bounds["o_mp_2_y"].max)
+            self._validate_parameter("o_mp_2[2]", self.o_mp_2.z, self.f_bounds["o_mp_2_z"].min, self.f_bounds["o_mp_2_z"].max)
             self._validate_parameter("y_sa", self.y_sa, self.f_bounds["y_sa"].min, self.f_bounds["y_sa"].max)
             self._validate_parameter("y_sa", self.y_sa, self.f_bounds["y_sa"].min, self.f_bounds["y_sa"].max)
 
@@ -329,7 +329,7 @@ if __name__ == '__main__':
 
     # Instantiate the geometry
     u1 = UChannel1(geom_path, x_1=100, x_2=105, y_l=50, y_r=50, z_l_1=33.3, z_l_2=33.3, z_r_1=33.3, z_r_2=33.3,
-                   offset_mp_1=(1, 1, 1), offset_mp_2=(1, 1, 1), r_l=(5, 5), r_r=(5, 5),
+                   o_mp_1=(1, 1, 1), o_mp_2=(1, 1, 1), r_l=(5, 5), r_r=(5, 5),
                    beta_l_1=15, beta_l_2=15, beta_r_1=15, beta_r_2=15, y_sa=50, sa=True)
 
     # Check the feasibility
