@@ -74,7 +74,7 @@ path_geom = Path(work_dir) / 'uchannel1.step'
 
 # Instantiate the geometry
 u1 = UChannel1(path_geom, x_1=100, x_2=105, y_l=50, y_r=50, z_l_1=33.3, z_l_2=33.3, z_r_1=33.3, z_r_2=33.3,
-               offset_mp_1=(1, 1, 1), offset_mp_2=(1, 1, 1), r_l=(5, 5), r_r=(5, 5),
+               o_mp_1=(1, 1, 1), o_mp_2=(1, 1, 1), r_l=(5, 5), r_r=(5, 5),
                beta_l_1=15, beta_l_2=15, beta_r_1=15, beta_r_2=15, y_sa=50, sa=True)
 
 # Check the feasibility
