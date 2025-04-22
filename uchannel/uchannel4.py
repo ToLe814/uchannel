@@ -8,7 +8,7 @@ from uchannel.error_handling import FeasibilityError
 
 
 class UChannel4(UChannelBase):
-    def __init__(self, path: Path, x_m: float = 100, ll: float = 50, lr: float = 50, z_m: float = 40, z_l: float = 53.3,
+    def __init__(self, path: Path, label_path: Path, x_m: float = 100, ll: float = 50, lr: float = 50, z_m: float = 40, z_l: float = 53.3,
                  z_r: float = 53.3, y_m: float = 50, y_l: float = 62.5, y_r: float = 62.5, y_sa: float = 20,
                  r: float = 12.5, sa: bool = True, alpha_l: float = 25, alpha_r: float = 25, beta_m: float = 25,
                  beta_l: float = 15, beta_r: float = 15):
@@ -19,6 +19,7 @@ class UChannel4(UChannelBase):
         189 and 1223 mm. The remaining parameters are limited by x_m.
 
         :param path: Path to the .step file where the geometry will be exported
+        :param label_path: Path to the .json file where the segmentation labels will be exported
         :param x_m: Length of the middle plane m in x direction
         :param ll: Length of the left plane l in normal direction
         :param lr: Length of the right plane r in normal direction
@@ -37,7 +38,7 @@ class UChannel4(UChannelBase):
         :param beta_l: Angle of the slant (left plane) in degrees
         :param beta_r: Angle of the slant (right plane) in degrees
         """
-        super().__init__(path)
+        super().__init__(path, label_path)
 
         # Parameters
         self.x_m = x_m
@@ -176,11 +177,12 @@ class UChannel4(UChannelBase):
 
         return True
 
-    def create_geometry(self, export: bool = True, gui: bool = False) -> None:
+    def create_geometry(self, segmentation_labels: bool = True, export: bool = True, gui: bool = False) -> None:
         """
         Create the UChannel4 geometry in gmsh using the parameters given in the constructor of UChannel4 and the
         calculated vertices.
 
+        :param segmentation_labels: Extract the segmentation labels from the geometry.
         :param export: Export the geometry to the path given in the constructor of UChannel4
         :param gui: Launch the gmsh GUI
 
@@ -216,9 +218,16 @@ class UChannel4(UChannelBase):
 
         self.model.occ.synchronize()
 
+        # Get the segmentation labels (auto-detects fillet + flange settings)
+        if segmentation_labels:
+            self.graph = self.face_adjacency.create_graph()
+            self.get_segmentation_labels()
+
         # Export the geometry
         if export:
             self._export_geometry()
+            if segmentation_labels:
+                self._write_segmentation_labels()
 
         # Launch the GUI
         if gui:
@@ -334,13 +343,15 @@ if __name__ == '__main__':
     # Define directories and paths
     work_dir = r"path/to/your/working/directory"
     geom_path = Path(work_dir) / 'uchannel4.step'
+    label_path = Path(work_dir) / 'uchannel3.json'
 
     # Instantiate the geometry
-    u4 = UChannel4(geom_path, x_m=100, ll=25, lr=25, z_m=20, z_l=15, z_r=15, y_m=25, y_l=25, y_r=25, y_sa=12.5, r=0.0,
+    u4 = UChannel4(geom_path, label_path, x_m=100, ll=25, lr=25, z_m=20, z_l=15, z_r=15, y_m=25, y_l=25, y_r=25, y_sa=12.5, r=0.0,
                    sa=True, alpha_l=0, alpha_r=0, beta_m=5, beta_l=5, beta_r=5)
 
     # Check the feasibility
     if u4.check_feasibility():
         # Create the geometry
         u4.gmsh_filleting = True
-        u4.create_geometry(export=True, gui=True)
+        u4.create_geometry(segmentation_labels=True, export=True, gui=False)
+        u4.visualize_segmentation_graph()

@@ -1,10 +1,19 @@
 from pathlib import Path
+import numpy as np
 from concurrent.futures import ProcessPoolExecutor
 import itertools
-
 from PIL import Image
 import gmsh
 
+def set_axes_equal(ax):
+    """Set 3D plot axes to equal scale."""
+    limits = np.array([ax.get_xlim3d(), ax.get_ylim3d(), ax.get_zlim3d()])
+    centers = limits.mean(axis=1)
+    plot_radius = (limits[:, 1] - limits[:, 0]).max() / 2
+
+    ax.set_xlim3d([centers[0] - plot_radius, centers[0] + plot_radius])
+    ax.set_ylim3d([centers[1] - plot_radius, centers[1] + plot_radius])
+    ax.set_zlim3d([centers[2] - plot_radius, centers[2] + plot_radius])
 
 def create_imagegrid(data_dir: Path, outpath: Path) -> None:
     """
@@ -50,101 +59,72 @@ def create_imagegrid(data_dir: Path, outpath: Path) -> None:
                 break
 
 
-def create_image(inpath: str, outpath: str, pov="isometric x", title="", zoom_factor=1.0, show=False):
+def create_image(
+    inpath: str,
+    outpath: str,
+    pov: str = "isometric x",
+    title: str = "",
+    zoom_factor: float = 1.0,
+    show: bool = False,
+):
     """
     Create an image of a geometry using gmsh. The background color is set to white.
 
-    :param inpath: path to the geometry
-    :param outpath: path to the exported image
-    :param pov: point of view (analogous to LS-PrePost)
+    :param inpath: Path to the geometry
+    :param outpath: Path to the exported image
+    :param pov: Point of view (analogous to LS-PrePost)
     :param title: Text to print into the top of the image
-    :param zoom_factor: zoom_factor > 1.0: zoom in
-                        zoom_factor < 1.0: zoom out
-    :param show: Option to show the image in the gui
+    :param zoom_factor: >1.0 zooms in, <1.0 zooms out
+    :param show: Option to show the image in the GUI
     """
-    # load geometry
     gmsh.initialize()
     gmsh.model.add("")
     gmsh.merge(inpath)
 
-    # set background color
     white = (255, 255, 255)
     black = (0, 0, 0)
-    gmsh.option.setColor("General.Background", white[0], white[1], white[2])
-    gmsh.option.setColor("General.Foreground", black[0], black[1], black[2])
-    gmsh.option.setColor("General.Text", black[0], black[1], black[2])
+    gmsh.option.setColor("General.Background", *white)
+    gmsh.option.setColor("General.Foreground", *black)
+    gmsh.option.setColor("General.Text", *black)
 
-    # rotate to wanted perspective
-    if pov == "front":
-        x_rot = -90
-        y_rot = 0
-        z_rot = 90
-    elif pov == "back":
-        x_rot = -90
-        y_rot = 0
-        z_rot = 270
-    elif pov == "left":
-        x_rot = -90
-        y_rot = 0
-        z_rot = 0
-    elif pov == "right":
-        x_rot = -90
-        y_rot = 0
-        z_rot = 180
-    elif pov == "top":
-        x_rot = 0
-        y_rot = 0
-        z_rot = 0
-    elif pov == "bottom":
-        x_rot = 0
-        y_rot = 0
-        z_rot = 180
-    elif pov == "isometric x":
-        x_rot = -45
-        y_rot = 0
-        z_rot = 45 + 180
-    elif pov == "isometric y":
-        x_rot = 45
-        y_rot = 45
-        z_rot = 90
-    elif pov == "isometric z":
-        x_rot = 45
-        y_rot = -45
-        z_rot = 0
-    elif pov == "isometric -x":
-        x_rot = -45
-        y_rot = 0
-        z_rot = 45
-    elif pov == "isometric -y":
-        x_rot = 45
-        y_rot = 45 + 180
-        z_rot = 90
-    elif pov == "isometric -z":
-        x_rot = 45
-        y_rot = -45 + 180
-        z_rot = 0
-    else:
-        raise ValueError(f'There exists no point of view: {pov}. Please adapt it.')
+    # Rotation
+    pov_angles = {
+        "front": (-90, 0, 90),
+        "back": (-90, 0, 270),
+        "left": (-90, 0, 0),
+        "right": (-90, 0, 180),
+        "top": (0, 0, 0),
+        "bottom": (0, 0, 180),
+        "isometric x": (-45, 0, 225),
+        "isometric y": (45, 45, 90),
+        "isometric z": (45, -45, 0),
+        "isometric -x": (-45, 0, 45),
+        "isometric -y": (45, 225, 90),
+        "isometric -z": (45, 135, 0),
+    }
+
+    if pov not in pov_angles:
+        raise ValueError(f"No such point of view: {pov}")
+    x_rot, y_rot, z_rot = pov_angles[pov]
 
     gmsh.option.setNumber("General.Trackball", 0)
     gmsh.option.setNumber("General.RotationX", x_rot)
     gmsh.option.setNumber("General.RotationY", y_rot)
     gmsh.option.setNumber("General.RotationZ", z_rot)
 
-    # zoom
-    gmsh.option.setNumber("General.ScaleX", zoom_factor)
-    gmsh.option.setNumber("General.ScaleX", zoom_factor)
-    gmsh.option.setNumber("General.ScaleX", zoom_factor)
+    # Zoom
+    for axis in ["ScaleX", "ScaleY", "ScaleZ"]:
+        gmsh.option.setNumber(f"General.{axis}", zoom_factor)
 
-    # show the gui or run in background
+    # Show or run in background
     if show:
         gmsh.fltk.run()
     else:
         gmsh.fltk.initialize()
 
-    # title
-    if title != "":
-        gmsh.view.add("my_view", 1)  # Set the view index
+    # Title annotation
+    if title:
+        gmsh.view.add("my_view", 1)
         gmsh.plugin.setString("Annotate", "Text", title)
         gmsh.plugin.setNumber("Annotate", "X", 1.e5)
         gmsh.plugin.setNumber("Annotate", "Y", 50)
@@ -153,10 +133,8 @@ def create_image(inpath: str, outpath: str, pov="isometric x", title="", zoom_fa
         gmsh.plugin.setString("Annotate", "Align", "Center")
         gmsh.plugin.run("Annotate")
 
-    # export and stop gmsh
     gmsh.write(outpath)
     gmsh.fltk.finalize()
-    gmsh.finalize()
 
 
 def resize_image(img_path: Path, factor: float):

@@ -8,7 +8,7 @@ from uchannel.error_handling import FeasibilityError
 
 
 class UChannel1(UChannelBase):
-    def __init__(self, path: Path, x_1: float = 100, x_2: float = 105, y_l: float = 50, y_r: float = 50,
+    def __init__(self, path: Path, label_path: Path, x_1: float = 100, x_2: float = 105, y_l: float = 50, y_r: float = 50,
                  y_sa: float = 50, z_l_1: float = 33.3, z_l_2: float = 33.3, z_r_1: float = 33.3, z_r_2: float = 33.3,
                  o_mp_1: Tuple[float, float, float] = (1, 1, 1),
                  o_mp_2: Tuple[float, float, float] = (1, 1, 1), r_l: Tuple[float, float] = (5, 5),
@@ -21,6 +21,7 @@ class UChannel1(UChannelBase):
         274 and 2477 mm. The remaining parameters are limited by x_1.
 
         :param path: Path to the .step file where the geometry will be exported
+        :param label_path: Path to the .json file where the segmentation labels will be exported
         :param x_1: Length of the bottom plane on side 1 along the x-axis
         :param x_2: Length of the bottom plane on side 2 along the x-axis
         :param y_l: Width of the bottom plane on left side along the y-axis
@@ -40,7 +41,7 @@ class UChannel1(UChannelBase):
         :param beta_r_2: Angle of the right slant on side 2
         :param sa: Boolean to indicate if the slant addendum should be created
         """
-        super().__init__(path)
+        super().__init__(path, label_path)
 
         # Parameters
         self.x_1 = x_1
@@ -164,6 +165,9 @@ class UChannel1(UChannelBase):
             self._validate_parameter("r_l[1]", self.r_l[1], self.f_bounds["r_l_1"].min, self.f_bounds["r_l_1"].max)
             self._validate_parameter("r_r[0]", self.r_r[0], self.f_bounds["r_r_0"].min, self.f_bounds["r_r_0"].max)
             self._validate_parameter("r_r[1]", self.r_r[1], self.f_bounds["r_r_1"].min, self.f_bounds["r_r_1"].max)
+            self._validate_parameter(("r_l[0]", "r_r[0]"), (self.r_l[0], self.r_r[0]), self.f_bounds["r_l_0"].min, self.f_bounds["r_l_0"].max)
+            self._validate_parameter(("r_l[1]", "r_r[1]"), (self.r_l[1], self.r_r[1]), self.f_bounds["r_l_0"].min, self.f_bounds["r_l_0"].max)
+            self._validate_parameter("r_l", self.r_l, self.f_bounds["r_l_0"].min, self.f_bounds["r_l_0"].max)
 
             # Checks for manufacturing constraints
             self._validate_parameter("beta_l_1", self.beta_l_1, self.f_bounds["beta_l_1"].min, self.f_bounds["beta_l_1"].max)
@@ -177,11 +181,12 @@ class UChannel1(UChannelBase):
 
         return True
 
-    def create_geometry(self, export: bool = True, gui: bool = False):
+    def create_geometry(self, segmentation_labels: bool = True, export: bool = True, gui: bool = False):
         """
         Create the UChannel1 geometry in gmsh using the parameters given in the constructor of UChannel1 and the
         calculated vertices.
 
+        :param segmentation_labels: Extract the segmentation labels from the geometry.
         :param export: Export the geometry to the path given in the constructor of UChannel1
         :param gui: Launch the gmsh GUI
 
@@ -228,9 +233,17 @@ class UChannel1(UChannelBase):
 
         self.model.occ.synchronize()
 
+        # Get the segmentation labels (auto-detects fillet + flange settings)
+        if segmentation_labels:
+            self.graph = self.face_adjacency.create_graph()
+            self.get_segmentation_labels()
+
+
         # Export the geometry
         if export:
             self._export_geometry()
+            if segmentation_labels:
+                self._write_segmentation_labels()
 
         # Launch the GUI
         if gui:
@@ -326,9 +339,10 @@ if __name__ == '__main__':
     # Define directories and paths
     work_dir = r"path/to/your/working/directory"
     geom_path = Path(work_dir) / 'uchannel1.step'
+    label_path = Path(work_dir) / 'uchannel1.json'
 
     # Instantiate the geometry
-    u1 = UChannel1(geom_path, x_1=100, x_2=105, y_l=50, y_r=50, z_l_1=33.3, z_l_2=33.3, z_r_1=33.3, z_r_2=33.3,
+    u1 = UChannel1(geom_path, label_path, x_1=100, x_2=105, y_l=50, y_r=50, z_l_1=33.3, z_l_2=33.3, z_r_1=33.3, z_r_2=33.3,
                    o_mp_1=(1, 1, 1), o_mp_2=(1, 1, 1), r_l=(5, 5), r_r=(5, 5),
                    beta_l_1=15, beta_l_2=15, beta_r_1=15, beta_r_2=15, y_sa=50, sa=True)
 
@@ -336,4 +350,5 @@ if __name__ == '__main__':
     if u1.check_feasibility():
         # Create the geometry
         u1.gmsh_filleting = True
-        u1.create_geometry(export=True, gui=True)
+        u1.create_geometry(segmentation_labels=True, export=True, gui=True)
+        u1.visualize_segmentation_graph()

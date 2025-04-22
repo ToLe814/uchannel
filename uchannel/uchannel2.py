@@ -1,6 +1,5 @@
 from pathlib import Path
 import math
-
 import gmsh
 
 from uchannel.uchannel_base import UChannelBase
@@ -8,7 +7,7 @@ from uchannel.error_handling import FeasibilityError
 
 
 class UChannel2(UChannelBase):
-    def __init__(self, path: Path, x_m: float = 100, x_l: float = 25, x_r: float = 25, ll: float = 12.5,
+    def __init__(self, path: Path, label_path: Path, x_m: float = 100, x_l: float = 25, x_r: float = 25, ll: float = 12.5,
                  lr: float = 12.5, z_m: float = 16.67, z_l: float = 11.12, z_r: float = 11.12, y_m: float = 20,
                  y_l: float = 10, y_r: float = 10, y_sa: float = 5, alpha_l: float = 0, alpha_r: float = 0,
                  beta_l: float = 5, beta_r: float = 5, beta_m: float = 5, r: float = 0.4, sa: bool = True,
@@ -20,6 +19,7 @@ class UChannel2(UChannelBase):
         128 and 700 mm. The remaining parameters are limited by x_m.
 
         :param path: Path to the .step file where the geometry will be exported
+        :param label_path: Path to the .json file where the segmentation labels will be exported
         :param x_m: Length of the middle plane in the x direction
         :param x_l: Length of the left addendum in the x direction
         :param x_r: Length of the right addendum in the x direction
@@ -42,7 +42,7 @@ class UChannel2(UChannelBase):
         :param la: Boolean to determine if the left addendum is present
         :param ra: Boolean to determine if the right addendum is present
         """
-        super().__init__(path)
+        super().__init__(path, label_path)
 
         # Parameters
         self.x_m: float = x_m
@@ -206,11 +206,12 @@ class UChannel2(UChannelBase):
 
         return True
 
-    def create_geometry(self, export: bool = True, gui: bool = False) -> None:
+    def create_geometry(self, segmentation_labels: bool = True, export: bool = True, gui: bool = False) -> None:
         """
         Create the UChannel2 geometry in gmsh using the parameters given in the constructor of UChannel2 and the
         calculated vertices.
 
+        :param segmentation_labels: Extract the segmentation labels from the geometry.
         :param export: Export the geometry to the path given in the constructor of UChannel2
         :param gui: Launch the gmsh GUI
 
@@ -258,9 +259,16 @@ class UChannel2(UChannelBase):
 
         self.model.occ.synchronize()
 
+        # Get the segmentation labels (auto-detects fillet + flange settings)
+        if segmentation_labels:
+            self.graph = self.face_adjacency.create_graph()
+            self.get_segmentation_labels()
+
         # Export the geometry
         if export:
             self._export_geometry()
+            if segmentation_labels:
+                self._write_segmentation_labels()
 
         # Launch the GUI
         if gui:
@@ -456,14 +464,16 @@ if __name__ == '__main__':
     # Define directories and paths
     work_dir = r"path/to/your/working/directory"
     geom_path = Path(work_dir) / 'uchannel2.step'
+    label_path = Path(work_dir) / 'uchannel2.json'
 
     # Instantiate the geometry
-    u2 = UChannel2(geom_path, x_m=250, x_l=75, x_r=75, ll=100, lr=100, z_m=50, z_l=33.3, z_r=33.33, y_m=52.5, y_l=56.25,
-                   y_r=56.25, y_sa=15, alpha_l=30, alpha_r=30, beta_l=15, beta_r=15, beta_m=15, r=0.0, sa=True,
+    u2 = UChannel2(geom_path, label_path, x_m=250, x_l=75, x_r=75, ll=100, lr=100, z_m=50, z_l=33.3, z_r=33.33, y_m=52.5, y_l=56.25,
+                   y_r=56.25, y_sa=15, alpha_l=30, alpha_r=30, beta_l=15, beta_r=15, beta_m=15, r=10, sa=True,
                    la=True, ra=True)
 
     # Check the feasibility
     if u2.check_feasibility():
         # Create the geometry
         u2.gmsh_filleting = True
-        u2.create_geometry(export=True, gui=True)
+        u2.create_geometry(segmentation_labels=True, export=True, gui=False)
+        u2.visualize_segmentation_graph()
