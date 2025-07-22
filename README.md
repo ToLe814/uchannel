@@ -98,9 +98,25 @@ We appreciate your interest in contributing to the U-Channel project! Before sub
 Pull requests are considered within the frame of the above-described requirements. Please note that this project does not receive any funding. As a result, responses and updates may take some time. Thank you for your understanding.
 
 
+## Theoretical Background
+
+For motivation and theoretical background on the model definitions, see:
+
+```bib
+@article{Lehrer.2025,
+ author = {Lehrer, Tobias and Stocker, Philipp and Duddeck, Fabian and Wagner, Marcus},
+ year = {2025},
+ title = {UCSM: Dataset of U-shaped parametric CAD geometries and real-world sheet metal meshes for deep drawing},
+ pages = {103924},
+ issn = {00104485},
+ journal = {Computer-Aided Design},
+ doi = {10.1016/j.cad.2025.103924}
+}
+```
+
 ## Cite This Work
 
-If you use this project in your research or applications, please cite it as follows:
+If you use this software in your research or applications, please cite it as follows:
 
 ```bib
 @misc{Lehrer.2024,
@@ -110,6 +126,19 @@ If you use this project in your research or applications, please cite it as foll
  title = {Parametric CAD Models to Create an Infinite Number of Structural U-Shaped Sheet Metal Geometries},
  publisher = {Zenodo},
  doi = {10.5281/zenodo.14191374}
+}
+```
+
+Moreover, a ready-to-use dataset of 2533 parts with U-Channel-1 to U-Channel-4 geometries is available here:
+
+```bib
+@misc{Lehrer.2025b,
+ abstract = {The dataset contains 2533 geometries from four different parametric CAD models sampled from the U-Channel python package. The representations include the original CAD geometries (.step), graph binaries (.bin), meshes (.off), and point clouds (.xyz). Additionally, we provide labels for supervised learning use cases of local and global drawability assessment and part segmentation (.json) for all representations. Custom label computation for drawability assessment is enabled by the provided strains.zip file, which contains minor and major true strains for the given meshes. For more details, refer to the associated publication.},
+ author = {Lehrer, Tobias and Stocker, Philipp and Duddeck, Fabian and Wagner, Marcus},
+ date = {2025},
+ title = {Machine Learning Dataset of U-Channel Sheet Metal Geometry Representations with Supervision Information for Drawability Assessment and Part Segmentation},
+ publisher = {Zenodo},
+ doi = {10.5281/zenodo.15327950}
 }
 ```
  
