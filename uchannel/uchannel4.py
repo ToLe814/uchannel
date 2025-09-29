@@ -1,7 +1,7 @@
 from pathlib import Path
 import math
-
 import gmsh
+import networkx as nx
 
 from uchannel.uchannel_base import UChannelBase
 from uchannel.error_handling import FeasibilityError
@@ -9,8 +9,8 @@ from uchannel.error_handling import FeasibilityError
 
 class UChannel4(UChannelBase):
     def __init__(self, path: Path, label_path: Path, x_m: float = 100, ll: float = 50, lr: float = 50, z_m: float = 40, z_l: float = 53.3,
-                 z_r: float = 53.3, y_m: float = 50, y_l: float = 62.5, y_r: float = 62.5, y_sa: float = 20,
-                 r: float = 12.5, sa: bool = True, alpha_l: float = 25, alpha_r: float = 25, beta_m: float = 25,
+                 z_r: float = 53.3, y_m: float = 50, y_l: float = 62.5, y_r: float = 62.5, y_fl: float = 20,
+                 r: float = 12.5, fl: bool = True, alpha_l: float = 25, alpha_r: float = 25, beta_m: float = 25,
                  beta_l: float = 15, beta_r: float = 15):
         """
         Class for generating the UChannel4 geometry in gmsh. A short description of the parameters is given below.
@@ -29,9 +29,9 @@ class UChannel4(UChannelBase):
         :param y_m: Width of the middle plane m in y direction
         :param y_l: Width of the left plane l in y direction
         :param y_r: Width of the right plane r in y direction
-        :param y_sa: Width of the slant addendum in y direction
+        :param y_fl: Width of the flange in y direction
         :param r: Radius of the fillets. Same for all fillets.
-        :param sa: Boolean to decide if the slant addendum should be added
+        :param fl: Boolean to decide if the flange should be added
         :param alpha_l: Angle of the left plane l from the x-axis in degrees
         :param alpha_r: Angle of the right plane r from the x-axis in degrees
         :param beta_m: Angle of the slant (middle plane) in degrees
@@ -50,19 +50,22 @@ class UChannel4(UChannelBase):
         self.y_m = y_m
         self.y_l = y_l
         self.y_r = y_r
-        self.y_sa = y_sa
+        self.y_fl = y_fl
         self.r = r
-        self.sa = sa
+        if isinstance(fl, float):
+            self.fl = bool(round(fl))
+        elif isinstance(fl, bool):
+            self.fl = fl
         self.alpha_l = math.radians(alpha_l)
         self.alpha_r = math.radians(alpha_r)
         self.beta_m = math.radians(beta_m)
         self.beta_l = math.radians(beta_l)
         self.beta_r = math.radians(beta_r)
 
-        self.calculate_vertices()
+        self._calculate_vertices()
         self.f_bounds = self._feasibility_bounds()  # Feasibility bounds
 
-    def calculate_vertices(self) -> None:
+    def _calculate_vertices(self) -> None:
         """
         Calculate the vertices of the UChannel4 geometry based on the parameters given in the constructor of UChannel4.
         The vertices order can be seen in the provided sketch.
@@ -99,11 +102,11 @@ class UChannel4(UChannelBase):
         self.v9 = self.Vertex(self.v10.x, self.v10.y + y_s, self.v10.z + self.z_m)
         self.v13 = self.Vertex(self.v14.x, self.v14.y + y_s_r, self.v14.z + self.z_r)
 
-        # Vertices that construct the left slant addendum
-        self.v17 = self.Vertex(self.v1.x, self.v1.y + self.y_sa, self.v1.z)
-        self.v18 = self.Vertex(self.v5.x, self.v5.y + self.y_sa, self.v5.z)
-        self.v19 = self.Vertex(self.v9.x, self.v9.y + self.y_sa, self.v9.z)
-        self.v20 = self.Vertex(self.v13.x, self.v13.y + self.y_sa, self.v13.z)
+        # Vertices that construct the left flange
+        self.v17 = self.Vertex(self.v1.x, self.v1.y + self.y_fl, self.v1.z)
+        self.v18 = self.Vertex(self.v5.x, self.v5.y + self.y_fl, self.v5.z)
+        self.v19 = self.Vertex(self.v9.x, self.v9.y + self.y_fl, self.v9.z)
+        self.v20 = self.Vertex(self.v13.x, self.v13.y + self.y_fl, self.v13.z)
 
         # Vertices that construct the right slant
         self.v4 = self.Vertex(self.v3.x, self.v3.y - y_s_l, self.v3.z + self.z_l)
@@ -111,11 +114,11 @@ class UChannel4(UChannelBase):
         self.v12 = self.Vertex(self.v11.x, self.v11.y - y_s, self.v11.z + self.z_m)
         self.v16 = self.Vertex(self.v15.x, self.v15.y - y_s_r, self.v15.z + self.z_r)
 
-        # Vertices that construct the right slant addendum
-        self.v21 = self.Vertex(self.v4.x, self.v4.y - self.y_sa, self.v4.z)
-        self.v22 = self.Vertex(self.v8.x, self.v8.y - self.y_sa, self.v8.z)
-        self.v23 = self.Vertex(self.v12.x, self.v12.y - self.y_sa, self.v12.z)
-        self.v24 = self.Vertex(self.v16.x, self.v16.y - self.y_sa, self.v16.z)
+        # Vertices that construct the right flange
+        self.v21 = self.Vertex(self.v4.x, self.v4.y - self.y_fl, self.v4.z)
+        self.v22 = self.Vertex(self.v8.x, self.v8.y - self.y_fl, self.v8.z)
+        self.v23 = self.Vertex(self.v12.x, self.v12.y - self.y_fl, self.v12.z)
+        self.v24 = self.Vertex(self.v16.x, self.v16.y - self.y_fl, self.v16.z)
 
     def _feasibility_bounds(self) -> dict:
         """
@@ -124,15 +127,15 @@ class UChannel4(UChannelBase):
         bounds = {
             "ll": self.Bounds(1/4*self.x_m, 1/2*self.x_m),
             "lr": self.Bounds(1/4*self.x_m, 1/2*self.x_m),
-            "z_m": self.Bounds(1/5*self.x_m, 3/5*self.x_m),
-            "z_l": self.Bounds(3/4*self.z_m, 4/3*self.z_m),
-            "z_r": self.Bounds(3/4*self.z_m, 4/3*self.z_m),
+            "z_m": self.Bounds(1/5 * self.x_m, 3/5 * self.x_m),
+            "z_l": self.Bounds(1/5 * self.x_m, 3/5 * self.x_m),
+            "z_r": self.Bounds(1/5 * self.x_m, 3/5 * self.x_m),
             "y_m": self.Bounds(1/4*self.x_m, 1/2*self.x_m),
             "y_l": self.Bounds(1/4*self.x_m, 3/8*self.x_m),
             "y_r": self.Bounds(1/4*self.x_m, 3/8*self.x_m),
-            "y_sa": self.Bounds(1/8*self.x_m, 1/5*self.x_m),
-            "r": self.Bounds(1/150 * self.x_m, 1/11 * self.x_m),
-            "sa": self.Bounds(True, False),
+            "y_fl": self.Bounds(1/8*self.x_m, 1/5*self.x_m),
+            "r": self.Bounds(1/150 * self.x_m, 0.08 * self.x_m),
+            "fl": self.Bounds(True, False),
             "alpha_l": self.Bounds(0, math.radians(25)),
             "alpha_r": self.Bounds(0, math.radians(25)),
             "beta_m": self.Bounds(math.radians(5), math.radians(15)),
@@ -159,12 +162,9 @@ class UChannel4(UChannelBase):
             self._validate_parameter('y_m', self.y_m, self.f_bounds['y_m'].min, self.f_bounds['y_m'].max)
             self._validate_parameter('y_l', self.y_l, self.f_bounds['y_l'].min, self.f_bounds['y_l'].max)
             self._validate_parameter('y_r', self.y_r, self.f_bounds['y_r'].min, self.f_bounds['y_r'].max)
-            self._validate_parameter('y_sa', self.y_sa, self.f_bounds['y_sa'].min, self.f_bounds['y_sa'].max)
+            self._validate_parameter('y_fl', self.y_fl, self.f_bounds['y_fl'].min, self.f_bounds['y_fl'].max)
             self._validate_parameter('alpha_l', self.alpha_l, self.f_bounds['alpha_l'].min, self.f_bounds['alpha_l'].max)
             self._validate_parameter('alpha_r', self.alpha_r, self.f_bounds['alpha_r'].min, self.f_bounds['alpha_r'].max)
-
-            # Checks for geometry generation constraints (Overlaps, Intersections, Gmsh Feasibility etc.)
-            self._validate_parameter('r', self.r, self.f_bounds['r'].min, self.f_bounds['r'].max)
 
             # Checks for manufacturing constraints
             self._validate_parameter('beta_m', self.beta_m, self.f_bounds['beta_m'].min, self.f_bounds['beta_m'].max)
@@ -188,34 +188,33 @@ class UChannel4(UChannelBase):
 
         :return: None
         """
+        # Check fillet method
+        self._check_fillet_method()
+
         gmsh.initialize()
         self.model = gmsh.model
-        self.model.add(self.name)
 
-        # 1.1 Create vertices calculated in self.calculate_vertices()
+        # 1. Create vertices
         self._create_vertices()
 
-        # 1.2 Create edges
+        # 2. Create edges
         self._create_edges()
 
-        # 1.3 Create faces
-        self._create_faces()
+        # 3. Create surfaces
+        self._create_surfaces()
 
-        # 1.4 Create fillets
-        if self.gmsh_filleting:
-            # gather fillet edges
+        # 4. Create fillets
+        if self.fillet_method == "gmsh":
+            # Edges that need fillets weather fl is true or false.
             fillet_edges_tags = [4, 5, 6, 7, 8, 9, 16, 17, 18, 19, 20, 21]
-            if self.sa:
+
+            if self.fl:
                 fillet_edges_tags.extend([26, 27, 33, 34, 13, 14, 15, 22, 23, 24])
 
-            # conduct filleting
-            self.create_fillet(edges=fillet_edges_tags, radii=[self.r])
+            # Conduct gmsh filleting
+            self._create_fillet(edges=fillet_edges_tags, radii=[self.r])
 
-        else:
-            raise NotImplementedError("Gmsh uses the Open Cascade Kernel for filleting, whose filleting must not be "
-                                      "feasible for all geometries. Users can implement their own filleting code here, "
-                                      "if the provided filleting by the OCC is not sufficient.")
-
+        # Final gmsh model sync
         self.model.occ.synchronize()
 
         # Get the segmentation labels (auto-detects fillet + flange settings)
@@ -227,7 +226,7 @@ class UChannel4(UChannelBase):
         if export:
             self._export_geometry()
             if segmentation_labels:
-                self._write_segmentation_labels()
+                self._export_segmentation_labels()
 
         # Launch the GUI
         if gui:
@@ -236,75 +235,108 @@ class UChannel4(UChannelBase):
         gmsh.finalize()
 
     def _create_vertices(self) -> None:
-        self.model.occ.addPoint(*self.v1, tag=1)
-        self.model.occ.addPoint(*self.v2, tag=2)
-        self.model.occ.addPoint(*self.v3, tag=3)
-        self.model.occ.addPoint(*self.v4, tag=4)
-        self.model.occ.addPoint(*self.v5, tag=5)
-        self.model.occ.addPoint(*self.v6, tag=6)
-        self.model.occ.addPoint(*self.v7, tag=7)
-        self.model.occ.addPoint(*self.v8, tag=8)
-        self.model.occ.addPoint(*self.v9, tag=9)
-        self.model.occ.addPoint(*self.v10, tag=10)
-        self.model.occ.addPoint(*self.v11, tag=11)
-        self.model.occ.addPoint(*self.v12, tag=12)
-        self.model.occ.addPoint(*self.v13, tag=13)
-        self.model.occ.addPoint(*self.v14, tag=14)
-        self.model.occ.addPoint(*self.v15, tag=15)
-        self.model.occ.addPoint(*self.v16, tag=16)
-        if self.sa:
-            self.model.occ.addPoint(*self.v17, tag=17)
-            self.model.occ.addPoint(*self.v18, tag=18)
-            self.model.occ.addPoint(*self.v19, tag=19)
-            self.model.occ.addPoint(*self.v20, tag=20)
-            self.model.occ.addPoint(*self.v21, tag=21)
-            self.model.occ.addPoint(*self.v22, tag=22)
-            self.model.occ.addPoint(*self.v23, tag=23)
-            self.model.occ.addPoint(*self.v24, tag=24)
+        """ Create all vertices of the geometry """
+        # Make sure we have a graph to work with
+        if not hasattr(self, "graph"):
+            self.graph = nx.Graph()
+
+        # Collect all vertex attribute names
+        vertex_names = [f"v{i}" for i in range(1, 17)]
+        if self.fl:
+            vertex_names.extend([f"v{i}" for i in range(17, 25)])
+
+        # Flange radii tags. Which are needed for explicit filleting
+        self.flange_radii_tags = [1, 5, 9, 13, 16, 12, 8, 4]
+
+        for idx, name in enumerate(vertex_names, start=1):
+            v = getattr(self, name)  # e.g. self.v1, self.v2 ...
+            tag = self.model.occ.addPoint(v.x, v.y, v.z, tag=idx)
+
+            # Add a node to the graph with gmsh tag + coords
+            self.graph.add_node(
+                name,
+                tag=tag,
+                coords=(v.x, v.y, v.z),
+            )
 
     def _create_edges(self) -> None:
-        self.model.occ.addLine(1, 2, tag=1)
-        self.model.occ.addLine(2, 3, tag=2)
-        self.model.occ.addLine(3, 4, tag=3)
-        self.model.occ.addLine(5, 6, tag=4)
-        self.model.occ.addLine(6, 7, tag=5)
-        self.model.occ.addLine(7, 8, tag=6)
-        self.model.occ.addLine(9, 10, tag=7)
-        self.model.occ.addLine(10, 11, tag=8)
-        self.model.occ.addLine(11, 12, tag=9)
-        self.model.occ.addLine(13, 14, tag=10)
-        self.model.occ.addLine(14, 15, tag=11)
-        self.model.occ.addLine(15, 16, tag=12)
-        self.model.occ.addLine(1, 5, tag=13)
-        self.model.occ.addLine(5, 9, tag=14)
-        self.model.occ.addLine(9, 13, tag=15)
-        self.model.occ.addLine(2, 6, tag=16)
-        self.model.occ.addLine(6, 10, tag=17)
-        self.model.occ.addLine(10, 14, tag=18)
-        self.model.occ.addLine(3, 7, tag=19)
-        self.model.occ.addLine(7, 11, tag=20)
-        self.model.occ.addLine(11, 15, tag=21)
-        self.model.occ.addLine(4, 8, tag=22)
-        self.model.occ.addLine(8, 12, tag=23)
-        self.model.occ.addLine(12, 16, tag=24)
+        """ Create all edges of the geometry. """
+        if not hasattr(self, "graph"):
+            raise RuntimeError("Graph not initialized. Call _create_vertices first.")
 
-        if self.sa:
-            self.model.occ.addLine(17, 1, tag=25)
-            self.model.occ.addLine(18, 5, tag=26)
-            self.model.occ.addLine(19, 9, tag=27)
-            self.model.occ.addLine(20, 13, tag=28)
-            self.model.occ.addLine(17, 18, tag=29)
-            self.model.occ.addLine(18, 19, tag=30)
-            self.model.occ.addLine(19, 20, tag=31)
-            self.model.occ.addLine(4, 21, tag=32)
-            self.model.occ.addLine(8, 22, tag=33)
-            self.model.occ.addLine(12, 23, tag=34)
-            self.model.occ.addLine(16, 24, tag=35)
-            self.model.occ.addLine(21, 22, tag=36)
-            self.model.occ.addLine(22, 23, tag=37)
-            self.model.occ.addLine(23, 24, tag=38)
+        # Base edges
+        edge_specs = [
+            ("e1", "v1", "v2"),
+            ("e2", "v2", "v3"),
+            ("e3", "v3", "v4"),
+            ("e4", "v5", "v6"),
+            ("e5", "v6", "v7"),
+            ("e6", "v7", "v8"),
+            ("e7", "v9", "v10"),
+            ("e8", "v10", "v11"),
+            ("e9", "v11", "v12"),
+            ("e10", "v13", "v14"),
+            ("e11", "v14", "v15"),
+            ("e12", "v15", "v16"),
+            ("e13", "v1", "v5"),
+            ("e14", "v5", "v9"),
+            ("e15", "v9", "v13"),
+            ("e16", "v2", "v6"),
+            ("e17", "v6", "v10"),
+            ("e18", "v10", "v14"),
+            ("e19", "v3", "v7"),
+            ("e20", "v7", "v11"),
+            ("e21", "v11", "v15"),
+            ("e22", "v4", "v8"),
+            ("e23", "v8", "v12"),
+            ("e24", "v12", "v16"),
+        ]
 
-    def _create_faces(self) -> None:
+        # Flange edges
+        if self.fl:
+            edge_specs += [
+                ("e25", "v17", "v1"),
+                ("e26", "v18", "v5"),
+                ("e27", "v19", "v9"),
+                ("e28", "v20", "v13"),
+                ("e29", "v17", "v18"),
+                ("e30", "v18", "v19"),
+                ("e31", "v19", "v20"),
+                ("e32", "v4", "v21"),
+                ("e33", "v8", "v22"),
+                ("e34", "v12", "v23"),
+                ("e35", "v16", "v24"),
+                ("e36", "v21", "v22"),
+                ("e37", "v22", "v23"),
+                ("e38", "v23", "v24"),
+            ]
+
+        # Create edges in gmsh and add them to the graph
+        for idx, (ename, n1, n2) in enumerate(edge_specs, start=1):
+            tag = self.model.occ.addLine(
+                self.graph.nodes[n1]["tag"],
+                self.graph.nodes[n2]["tag"],
+                tag=idx
+            )
+            self.graph.add_edge(
+                n1, n2,
+                name=ename,
+                tag=tag,
+                kind="line"
+            )
+
+        # For the explicit fillet method, mark the helper edges as those will be specifically removed later
+        if self.fillet_method == "explicit":
+            if self.fl:
+                helper_tags = (4, 26, 5, 6, 33, 27, 7, 8, 9, 34, 19, 20, 21, 16, 17, 18, 13, 14, 15, 22, 23, 24)
+            else:
+                helper_tags = (4, 5, 6, 7, 8, 9, 16, 17, 18, 19, 20, 21)
+            for u, v, d in self.graph.edges(data=True):
+                if d.get("tag") in helper_tags:
+                    d["is_helper"] = True
+
+    def _create_surfaces_procedural(self) -> None:
+        """ Create all surfaces of the geometry using procedural construction """
         self.model.occ.addCurveLoop([1, 16, 4, 13], tag=1)
         self.model.occ.addSurfaceFilling(wireTag=1, tag=1, degree=2, maxDegree=3)
         self.model.occ.addCurveLoop([2, 19, 5, 16], tag=3)
@@ -324,7 +356,7 @@ class UChannel4(UChannelBase):
         self.model.occ.addCurveLoop([9, 24, 12, 21], tag=17)
         self.model.occ.addSurfaceFilling(wireTag=17, tag=9, degree=2, maxDegree=3)
 
-        if self.sa:
+        if self.fl:
             self.model.occ.addCurveLoop([25, 13, 26, 29], tag=19)
             self.model.occ.addSurfaceFilling(wireTag=19, tag=10, degree=2, maxDegree=3)
             self.model.occ.addCurveLoop([26, 14, 27, 30], tag=21)
@@ -338,20 +370,62 @@ class UChannel4(UChannelBase):
             self.model.occ.addCurveLoop([34, 38, 35, 24], tag=29)
             self.model.occ.addSurfaceFilling(wireTag=29, tag=15, degree=2, maxDegree=3)
 
+    def _create_surfaces_explicit(self) -> None:
+        """
+        Create all surfaces of the geometry using explicit construction which includes explicit fillet construction.
+        """
+        self.model.occ.synchronize()
+
+        # Calculate the bounding box of the geometry
+        self._get_bounding_box()
+
+        # Create circular arcs at corners of the geometry using the graph representation of the geometry.
+        self._graph_corner(self.flange_radii_tags)
+        # Connect the newly created circular arcs
+        self._connect_fillet_nodes_on_yz_planes(tolerance=10)
+        # Fillet the newly created circular arc junctions
+        # Connect fillet edges with lines
+        self._fillet_support_junctions()
+        self._connect_all_junctions_with_bspline()
+        self._connect_chain("bottom")
+        self._connect_chain("top")
+
+        # special needed in the case of alpha values ~0
+        removed_base_node_tags = []
+        for u, v, data in self.graph.edges(data=True):
+            if "arc" and "collinear" in data["name"]:
+                adjacencies_u, _  = self.model.getAdjacencies(0, self.graph.nodes[u]["tag"])
+                adjacencies_v, _ = self.model.getAdjacencies(0, self.graph.nodes[v]["tag"])
+                if len(adjacencies_u) < 2 and len(adjacencies_v) < 2:
+                    removed_base_node_tags.append(self.graph.nodes[u]["base"])
+                    removed_base_node_tags.append(self.graph.nodes[v]["base"])
+                    self.model.occ.remove([(1, data["tag"])], recursive=True)
+
+        self.model.occ.synchronize()
+
+        self._remove_helper_edges()
+        self._fragment_at_graph_nodes()
+
+        self._rebuild_graph_from_occ()
+
+        self._clean_graph()
+        surfaces = self._build_surfaces_from_ordered_cycles()
+        self._build_shell_from_surfaces(surfaces)
+
 
 if __name__ == '__main__':
     # Define directories and paths
     work_dir = r"path/to/your/working/directory"
     geom_path = Path(work_dir) / 'uchannel4.step'
-    label_path = Path(work_dir) / 'uchannel3.json'
+    label_path = Path(work_dir) / 'uchannel4.json'
 
     # Instantiate the geometry
-    u4 = UChannel4(geom_path, label_path, x_m=100, ll=25, lr=25, z_m=20, z_l=15, z_r=15, y_m=25, y_l=25, y_r=25, y_sa=12.5, r=0.0,
-                   sa=True, alpha_l=0, alpha_r=0, beta_m=5, beta_l=5, beta_r=5)
+    u4 = UChannel4(geom_path, label_path, x_m=100, ll=25, lr=25, z_m=20, z_l=15, z_r=15, y_m=25, y_l=25, y_r=25,
+                   y_fl=12.5, r=0.0, fl=True, alpha_l=0, alpha_r=0, beta_m=5, beta_l=5, beta_r=5)
 
     # Check the feasibility
     if u4.check_feasibility():
         # Create the geometry
-        u4.gmsh_filleting = True
-        u4.create_geometry(segmentation_labels=True, export=True, gui=False)
+        u4.fillet_method = 'explicit'
+        u4.create_geometry(segmentation_labels=True, export=True, gui=True)
         u4.visualize_segmentation_graph()
