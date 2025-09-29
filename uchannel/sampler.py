@@ -16,7 +16,7 @@ from uchannel.uchannel4 import UChannel4
 class Sampler:
     """ Class to generate samples for a given UChannel class using Latin Hypercube Sampling. """
 
-    def __init__(self, uchannel_class, gmsh_filleting: bool, n_samples: int, data_dir: Path, limiting_parameter: float):
+    def __init__(self, uchannel_class, fillet_method: str, n_samples: int, data_dir: Path, limiting_parameter: float):
         """
         Initialize the sampler class.
 
@@ -27,7 +27,7 @@ class Sampler:
                                                                     UChannel4: x_m)
         """
         self.uchannel = uchannel_class
-        self.gmsh_filleting = gmsh_filleting
+        self.fillet_method = fillet_method
         self.n_samples = n_samples
         self.data_dir = data_dir
         self.limiting_parameter = limiting_parameter
@@ -35,7 +35,7 @@ class Sampler:
 
     def get_bounds(self) -> None:
         """ Get the parameter bounds for Latin Hypercube Sampling (LHS) for the given UChannel class."""
-        self.bounds = self.uchannel(Path(), self.limiting_parameter).f_bounds
+        self.bounds = self.uchannel(Path(), Path(), self.limiting_parameter).f_bounds
 
     def _get_params(self, sample: list) -> dict:
         """
@@ -50,20 +50,22 @@ class Sampler:
                 "x_2": sample[0],
                 "y_l": sample[1],
                 "y_r": sample[2],
-                "y_sa": sample[3],
+                "y_fl": sample[3],
                 "z_l_1": sample[4],
                 "z_l_2": sample[5],
                 "z_r_1": sample[6],
                 "z_r_2": sample[7],
-                "offset_mp_1": (sample[8], sample[9], sample[10]),
-                "offset_mp_2": (sample[11], sample[12], sample[13]),
+                "o_mp_1": (sample[8], sample[9], sample[10]),
+                "o_mp_2": (sample[11], sample[12], sample[13]),
                 "r_l": (sample[14], sample[15]),
                 "r_r": (sample[16], sample[17]),
+                # convert radians → degrees for angles
                 "beta_l_1": math.degrees(sample[18]),
                 "beta_l_2": math.degrees(sample[19]),
                 "beta_r_1": math.degrees(sample[20]),
                 "beta_r_2": math.degrees(sample[21]),
-                "sa": sample[22]
+                # handle flange as boolean (rounding ensures clean conversion)
+                "fl": bool(round(sample[22]))
             }
         elif self.uchannel == UChannel2:
             params = {
@@ -78,16 +80,16 @@ class Sampler:
                 "y_m": sample[7],
                 "y_l": sample[8],
                 "y_r": sample[9],
-                "y_sa": sample[10],
+                "y_fl": sample[10],
                 "alpha_l": math.degrees(sample[11]),
                 "alpha_r": math.degrees(sample[12]),
                 "beta_l": math.degrees(sample[13]),
                 "beta_r": math.degrees(sample[14]),
                 "beta_m": math.degrees(sample[15]),
                 "r": sample[16],
-                "sa": sample[17],
-                "la": sample[18],
-                "ra": sample[19]
+                "fl": bool(round(sample[17])),
+                "la": bool(round(sample[18])),
+                "ra": bool(round(sample[19]))
             }
         elif self.uchannel == UChannel3:
             params = {
@@ -105,10 +107,10 @@ class Sampler:
                 "beta_b": math.degrees(sample[10]),
                 "beta_c": math.degrees(sample[11]),
                 "beta_t": math.degrees(sample[12]),
-                "y_sa": sample[13],
+                "y_fl": sample[13],
                 "r": sample[14],
-                "ad": sample[15],
-                "sa": sample[16]
+                "ad": bool(round(sample[15])),
+                "fl": bool(round(sample[16]))
             }
         elif self.uchannel == UChannel4:
             params = {
@@ -121,9 +123,9 @@ class Sampler:
                 "y_m": sample[5],
                 "y_l": sample[6],
                 "y_r": sample[7],
-                "y_sa": sample[8],
+                "y_fl": sample[8],
                 "r": sample[9],
-                "sa": sample[10],
+                "fl": bool(round(sample[10])),
                 "alpha_l": math.degrees(sample[11]),
                 "alpha_r": math.degrees(sample[12]),
                 "beta_m": math.degrees(sample[13]),
@@ -150,7 +152,8 @@ class Sampler:
         lhd = lhs(n=n_parameters, samples=self.n_samples, criterion="maximin", iterations=100)
 
         # merge factors to bounds
-        bounds = np.array(list(self.bounds.values()))
+        # bounds = np.array(list(self.bounds.values()))
+        bounds = np.array([(b.min, b.max) for b in self.bounds.values()])
         samples = bounds[:, 0] + lhd * (bounds[:, 1] - bounds[:, 0])  # lb + factor * (ub - lb)
 
         # process sample (parallel or serial)
@@ -173,21 +176,22 @@ class Sampler:
         """
         sample_folder = self.data_dir / f"sample_{i}"
         geom_path = sample_folder / f"sample_{i}.step"
+        label_path = sample_folder / f"sample_{i}.json"
         image_path = sample_folder / f"sample_{i}.png"
         yaml_path = sample_folder / "parameters.yaml"
 
         params = self._get_params(sample)
-        u = self.uchannel(geom_path, **params)
-        u.gmsh_filleting = self.gmsh_filleting
-
-        if u.check_feasibility:
+        u = self.uchannel(geom_path, label_path, **params)
+        u.fillet_method = self.fillet_method
+        if u.check_feasibility():
             sample_folder.mkdir(exist_ok=True, parents=True)
-            u.export_parameter(params=params, outpath=yaml_path)
-            u.create_geometry(export=True, gui=False)
+            u.export_parameter(params=params, output_path=yaml_path)
+            u.create_geometry(export=True, gui=False, segmentation_labels=False)
             if gen_image:
-                u.create_image(inpath=geom_path, outpath=image_path,
-                               pov="isometric x", title=f"Sample {i}", zoom_factor=1.0, show=False)
+                u.create_image(input_path=geom_path, output_path=image_path,
+                               pov="isometric x", title=f"Sample {i}", zoom_factor=0.8, show=False)
         else:
+            logging.warning(params)
             logging.warning(f"Sample {i} is not feasible.")
 
 
@@ -203,7 +207,7 @@ if __name__ == '__main__':
     os.makedirs(data_dir, exist_ok=True)
 
     # instantiate Sampler
-    u1_sampler = Sampler(UChannel1, gmsh_filleting=True, n_samples=250, data_dir=data_dir, limiting_parameter=400)
+    u1_sampler = Sampler(UChannel1, fillet_method="explicit", n_samples=250, data_dir=data_dir, limiting_parameter=400)
 
     # get the bounds for the remaining parameters for the given limiting parameter
     u1_sampler.get_bounds()
