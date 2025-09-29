@@ -28,6 +28,7 @@ The U-Channel Software is a Python package designed for generating and working w
 The key features of the package are:
 
 - Parametric Models: Generate custom U-shaped geometries inspired by real-world shapes.
+- Filleting: With fillet_method="explicit", fillets are explicitly modelled. With fillet_method="gmsh", filleting is performed using gmsh. 
 - Feasibility Check: Includes a plausibility check to validate the geometries.
 - Segmentation: Automatically segment faces into bottom, slant, fillet, and flange regions
 - Visualization: Create detailed images of the generated geometries.
@@ -82,7 +83,7 @@ u1 = UChannel1(path_geom, label_path, x_1=100, x_2=105, y_l=50, y_r=50, z_l_1=33
 # Check the feasibility
 if u1.check_feasibility():
         # Create the geometry
-        u1.gmsh_filleting = True
+        u1.fillet_method = "explicit"
         u1.create_geometry(segmentation_labels=True, export=True, gui=False)
 ```
 Find running examples of feasible geometry creation in the respective project files. Explanation for the parameters can be found in the comments, [sketches](./sketches/), or in the associated [publication(s)](#cite-this-work). Currently, there is no documentation of the code.
